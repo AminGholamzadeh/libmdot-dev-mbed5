@@ -68,8 +68,9 @@ int main() {
 
     // attempt to join the network
     printf("joining network\r\n");
-    if ((ret = dot->joinNetwork()) != mDot::MDOT_OK) {
+    while ((ret = dot->joinNetwork()) != mDot::MDOT_OK) {
         log_error(dot, "failed to join network", ret);
+        wait(2);
     }
 
     // format data for sending to the gateway
