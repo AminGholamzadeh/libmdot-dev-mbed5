@@ -47,7 +47,10 @@ class mDot {
         uint8_t getActivityLedState();
 
         void blinkActivityLed(void) {
-            _activity_led = !_activity_led;
+            if (_activity_led) {
+                int val = _activity_led->read();
+                _activity_led->write(!val);
+            }
         }
 
         mDot(const mDot&);
@@ -64,7 +67,9 @@ class mDot {
         static const uint32_t _baud_rates[];
         uint8_t _activity_led_state;
         Ticker _tick;
-        DigitalOut _activity_led;
+        DigitalOut* _activity_led;
+        bool _activity_led_enable;
+        PinName _activity_led_pin;
         uint16_t _linkFailCount;
 
         typedef enum {
@@ -196,6 +201,27 @@ class mDot {
          * @returns current log level
          */
         uint8_t getLogLevel();
+
+        /** Enable or disable the activity LED.
+         * @param enable true to enable the LED, false to disable
+         */
+        void setActivityLedEnable(const bool& enable);
+
+        /** Find out if the activity LED is enabled
+         * @returns true if activity LED is enabled, false if disabled
+         */
+        bool getActivityLedEnable();
+
+        /** Use a different pin for the activity LED.
+         * The default is XBEE_RSSI.
+         * @param pin the new pin to use
+         */
+        void setActivityLedPin(const PinName& pin);
+
+        /** Find out what pin the activity LED is on
+         * @returns the pin the activity LED is using
+         */
+        PinName getActivityLedPin();
 
         /** Get list of channel frequencies currently in use
          * @returns vector of channels currently in use
