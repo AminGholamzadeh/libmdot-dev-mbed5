@@ -70,6 +70,7 @@ class mDot {
         DigitalOut* _activity_led;
         bool _activity_led_enable;
         PinName _activity_led_pin;
+        bool _activity_led_external;
         uint16_t _linkFailCount;
 
         typedef enum {
@@ -217,6 +218,12 @@ class mDot {
          * @param pin the new pin to use
          */
         void setActivityLedPin(const PinName& pin);
+
+        /** Use an external DigitalOut object for the activity LED.
+         * The pointer must stay valid!
+         * @param pin the DigitalOut object to use
+         */
+        void setActivityLedPin(DigitalOut* pin);
 
         /** Find out what pin the activity LED is on
          * @returns the pin the activity LED is using
