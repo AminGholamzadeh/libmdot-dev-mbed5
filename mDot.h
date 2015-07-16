@@ -1,9 +1,4 @@
-/************************************************
- * MultiTech MTDOT Library
- * Copyright (c) 2015 MultiTech Systems
- *
- * See LICENSE file for license information
- ***********************************************/
+// TODO: add license header
 
 #ifndef MDOT_H
 #define MDOT_H
@@ -114,6 +109,10 @@ class mDot {
 
         enum FrequencySubBands {
             FSB_ALL, FSB_1, FSB_2, FSB_3, FSB_4, FSB_5, FSB_6, FSB_7, FSB_8
+        };
+
+        enum JoinByteOrder {
+            LSB, MSB
         };
 
         typedef struct {
@@ -360,6 +359,16 @@ class mDot {
          */
         std::vector<uint8_t> getNetworkKey();
 
+        /** Set join byte order
+         * @param order 0:LSB 1:MSB
+         */
+        uint32_t setJoinByteOrder(uint8_t order);
+
+        /** Get join byte order
+         * @returns byte order to use in joins 0:LSB 1:MSB
+         */
+        uint8_t getJoinByteOrder();
+
         /** Attempt to join network
          * retries according to configuration set by setJoinRetries()
          * @returns MDOT_OK if success
@@ -580,6 +589,8 @@ class mDot {
          */
         int32_t recv(std::vector<uint8_t>& data);
 
+        void openRxWindow(uint32_t timeout);
+
         /** Ping
          * status will be MDOT_OK if ping succeeded
          * @returns ping_response struct containing status, RSSI, and SNR
@@ -690,6 +701,7 @@ class mDot {
         uint64_t crc64(uint64_t crc, const unsigned char *s, uint64_t l);
 
         // MTS_RADIO_DEBUG_COMMANDS
+        void sendContinuous();
         int32_t setDeviceId(const std::vector<uint8_t>& id);
         int32_t setFrequencyBand(const uint8_t& band);
         bool saveProtectedConfig();
@@ -699,6 +711,8 @@ class mDot {
         void eraseFlash();
 
         mdot_stats getStats();
+        void resetStats();
+
 
     private:
         mdot_stats _stats;
