@@ -10,30 +10,30 @@
 
 #ifdef MTS_DEBUG
 #define logFatal(format, ...) \
-    MTSLog::printMessage(MTSLog::FATAL_LEVEL, "%s:%s:%s| [%s] " format "\r\n", __FILE__, __func__, __LINE__, MTSLog::FATAL_LABEL, ##__VA_ARGS__)
+    mts::MTSLog::printMessage(mts::MTSLog::FATAL_LEVEL, "%s:%s:%s| [%s] " format "\r\n", __FILE__, __func__, __LINE__, mts::MTSLog::FATAL_LABEL, ##__VA_ARGS__)
 #define logError(format, ...) \
-    MTSLog::printMessage(MTSLog::ERROR_LEVEL, "%s:%s:%s| [%s] " format "\r\n", __FILE__, __func__, __LINE__, MTSLog::ERROR_LABEL, ##__VA_ARGS__)
+    mts::MTSLog::printMessage(mts::MTSLog::ERROR_LEVEL, "%s:%s:%s| [%s] " format "\r\n", __FILE__, __func__, __LINE__, mts::MTSLog::ERROR_LABEL, ##__VA_ARGS__)
 #define logWarning(format, ...) \
-    MTSLog::printMessage(MTSLog::WARNING_LEVEL, "%s:%s:%s| [%s] " format "\r\n", __FILE__, __func__, __LINE__, MTSLog::WARNING_LABEL, ##__VA_ARGS__)
+    mts::MTSLog::printMessage(mts::MTSLog::WARNING_LEVEL, "%s:%s:%s| [%s] " format "\r\n", __FILE__, __func__, __LINE__, mts::MTSLog::WARNING_LABEL, ##__VA_ARGS__)
 #define logInfo(format, ...) \
-    MTSLog::printMessage(MTSLog::INFO_LEVEL, "%s:%s:%s| [%s] " format "\r\n", __FILE__, __func__, __LINE__, MTSLog::INFO_LABEL, ##__VA_ARGS__)
+    mts::MTSLog::printMessage(mts::MTSLog::INFO_LEVEL, "%s:%s:%s| [%s] " format "\r\n", __FILE__, __func__, __LINE__, mts::MTSLog::INFO_LABEL, ##__VA_ARGS__)
 #define logDebug(format, ...) \
-    MTSLog::printMessage(MTSLog::DEBUG_LEVEL, "%s:%s:%s| [%s] " format "\r\n", __FILE__, __func__, __LINE__, MTSLog::DEBUG_LABEL, ##__VA_ARGS__)
+    mts::MTSLog::printMessage(mts::MTSLog::DEBUG_LEVEL, "%s:%s:%s| [%s] " format "\r\n", __FILE__, __func__, __LINE__, mts::MTSLog::DEBUG_LABEL, ##__VA_ARGS__)
 #define logTrace(format, ...) \
-    MTSLog::printMessage(MTSLog::TRACE_LEVEL, "%s:%s:%s| [%s] " format "\r\n", __FILE__, __func__, __LINE__, MTSLog::TRACE_LABEL, ##__VA_ARGS__)
+    mts::MTSLog::printMessage(mts::MTSLog::TRACE_LEVEL, "%s:%s:%s| [%s] " format "\r\n", __FILE__, __func__, __LINE__, mts::MTSLog::TRACE_LABEL, ##__VA_ARGS__)
 #else
 #define logFatal(format, ...) \
-    MTSLog::printMessage(MTSLog::FATAL_LEVEL, "[%s] " format "\r\n", MTSLog::FATAL_LABEL, ##__VA_ARGS__)
+    mts::MTSLog::printMessage(mts::MTSLog::FATAL_LEVEL, "[%s] " format "\r\n", mts::MTSLog::FATAL_LABEL, ##__VA_ARGS__)
 #define logError(format, ...) \
-    MTSLog::printMessage(MTSLog::ERROR_LEVEL, "[%s] " format "\r\n", MTSLog::ERROR_LABEL, ##__VA_ARGS__)
+    mts::MTSLog::printMessage(mts::MTSLog::ERROR_LEVEL, "[%s] " format "\r\n", mts::MTSLog::ERROR_LABEL, ##__VA_ARGS__)
 #define logWarning(format, ...) \
-    MTSLog::printMessage(MTSLog::WARNING_LEVEL, "[%s] " format "\r\n", MTSLog::WARNING_LABEL, ##__VA_ARGS__)
+    mts::MTSLog::printMessage(mts::MTSLog::WARNING_LEVEL, "[%s] " format "\r\n", mts::MTSLog::WARNING_LABEL, ##__VA_ARGS__)
 #define logInfo(format, ...) \
-    MTSLog::printMessage(MTSLog::INFO_LEVEL, "[%s] " format "\r\n", MTSLog::INFO_LABEL, ##__VA_ARGS__)
+    mts::MTSLog::printMessage(mts::MTSLog::INFO_LEVEL, "[%s] " format "\r\n", mts::MTSLog::INFO_LABEL, ##__VA_ARGS__)
 #define logDebug(format, ...) \
-    MTSLog::printMessage(MTSLog::DEBUG_LEVEL, "[%s] " format "\r\n", MTSLog::DEBUG_LABEL, ##__VA_ARGS__)
+    mts::MTSLog::printMessage(mts::MTSLog::DEBUG_LEVEL, "[%s] " format "\r\n", mts::MTSLog::DEBUG_LABEL, ##__VA_ARGS__)
 #define logTrace(format, ...) \
-    MTSLog::printMessage(MTSLog::TRACE_LEVEL, "[%s] " format "\r\n", MTSLog::TRACE_LABEL, ##__VA_ARGS__)
+    mts::MTSLog::printMessage(mts::MTSLog::TRACE_LEVEL, "[%s] " format "\r\n", mts::MTSLog::TRACE_LABEL, ##__VA_ARGS__)
 #endif
 
 namespace mts {

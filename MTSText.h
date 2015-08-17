@@ -60,11 +60,17 @@ public:
 
     static std::string toUpper(const std::string str);
 
-    std::string float2String(double val, int precision);
+    static std::string float2String(double val, int precision);
 
     static std::string bin2hexString(const std::vector<uint8_t>& data, const char* delim = "", bool leadingZeros = false);
 
     static std::string bin2hexString(const uint8_t* data, const uint32_t len, const char* delim = "", bool leadingZeros = false);
+
+    static std::string bin2base64(const std::vector<uint8_t>& data);
+
+    static std::string bin2base64(const uint8_t* data, size_t size);
+
+    static bool base642bin(const std::string in, std::vector<uint8_t>& out);
 
     static void ltrim(std::string& str, const char* args);
 

@@ -1,4 +1,10 @@
-// TODO: add license header
+/************************************************
+ * MultiTech MTDOT Library
+ * Copyright (c) 2015 MultiTech Systems
+ *
+ * See LICENSE file for license information
+ ***********************************************/
+
 
 #ifndef MDOT_H
 #define MDOT_H
@@ -13,7 +19,6 @@ class LoRaMacEvent;
 class LoRaConfig;
 class LoRaMac;
 class MdotRadio;
-
 
 class mDot {
 
@@ -51,6 +56,11 @@ class mDot {
         mDot(const mDot&);
         mDot& operator=(const mDot&);
 
+        uint32_t RTC_ReadBackupRegister(uint32_t RTC_BKP_DR);
+        void RTC_WriteBackupRegister(uint32_t RTC_BKP_DR, uint32_t Data);
+
+        void wakeup();
+
         static mDot* _instance;
 
         LoRaMac* _mac;
@@ -67,12 +77,25 @@ class mDot {
         PinName _activity_led_pin;
         bool _activity_led_external;
         uint16_t _linkFailCount;
+        uint8_t _class;
+        InterruptIn* _wakeup;
+        PinName _wakeup_pin;
 
         typedef enum {
             OFF, ON, BLINK,
         } state;
 
     public:
+
+        typedef enum {
+            FM_APPEND = (1 << 0),
+            FM_TRUNC = (1 << 1),
+            FM_CREAT = (1 << 2),
+            FM_RDONLY = (1 << 3),
+            FM_WRONLY = (1 << 4),
+            FM_RDWR = (FM_RDONLY | FM_WRONLY),
+            FM_DIRECT = (1 << 5)
+        } FileMode;
 
         typedef enum {
             MDOT_OK = 0,
@@ -114,6 +137,16 @@ class mDot {
         enum JoinByteOrder {
             LSB, MSB
         };
+
+        enum wakeup_mode {
+            RTC_ALARM, INTERRUPT
+        };
+
+        typedef struct {
+                int16_t fd;
+                char name[30];
+                uint32_t size;
+        } mdot_file;
 
         typedef struct {
                 uint32_t Up;
@@ -589,7 +622,6 @@ class mDot {
          */
         int32_t recv(std::vector<uint8_t>& data);
 
-        void openRxWindow(uint32_t timeout);
 
         /** Ping
          * status will be MDOT_OK if ping succeeded
@@ -607,12 +639,34 @@ class mDot {
          */
         std::string getLastError();
 
+        /** Go to sleep
+         * @param interval the number of seconds to sleep before waking up if wakeup_mode == RTC_ALARM, else ignored
+         * @param wakeup_mode RTC_ALARM, INTERRUPT
+         *      if RTC_ALARM the real time clock is configured to wake the device up after the specified interval
+         *      if INTERRUPT the device will wake up on the rising edge of the interrupt pin
+         * @param deepsleep if true go into deep sleep mode (lowest power, all memory and registers are lost, peripherals turned off)
+         *                  else go into sleep mode (low power, memory and registers are maintained, peripherals stay on)
+         *
+         * ** CURRENTLY ONLY DEEPSLEEP MODE IS AVAILABLE **
+         *
+         * in sleep mode, the device can be woken up on any of the XBEE pins or by the RTC alarm
+         * in deepsleep mode, the device can only be woken up using the WKUP pin (PA0, XBEE_DIO7) or by the RTC alarm
+         */
+        void sleep(const uint32_t& interval, const uint8_t& wakeup_mode = RTC_ALARM, const bool& deepsleep = true);
+
+        /** Set wake pin
+         * @param pin the pin to use to wake the device from sleep mode
+         */
+        void setWakePin(const PinName& pin);
+
+        /** Get wake pin
+         * @returns the pin to use to wake the device from sleep mode
+         */
+        PinName getWakePin();
+
         /******************************************
          * THESE FEATURES ARE NOT FULLY IMPLEMENTED
          *****************************************/
-        void sleep();
-        void wakeup();
-
         // get/set adaptive data rate
         // configure data rates and power levels based on signal to noise information from gateway
         // true == adaptive data rate is on
@@ -624,7 +678,7 @@ class mDot {
          * The following functions are only used by the AT command application and
          * should not be used by standard applications consuming the mDot library
          ************************************************************************/
-        
+
         // set/get configured baud rate for command port
         // only for use in conjunction with AT interface
         // set function returns MDOT_OK if success
@@ -683,24 +737,115 @@ class mDot {
         // get/set serial wake interval
         // valid values are 2 s - INT_MAX (2147483647) s
         // set function returns MDOT_OK if success
-        int32_t setSerialWakeInterval(const uint32_t& interval);
-        uint32_t getSerialWakeInterval();
+        int32_t setWakeInterval(const uint32_t& interval);
+        uint32_t getWakeInterval();
 
         // get/set serial wake delay
         // valid values are 2 ms - INT_MAX (2147483647) ms
         // set function returns MDOT_OK if success
-        int32_t setSerialWakeDelay(const uint32_t& delay);
-        uint32_t getSerialWakeDelay();
+        int32_t setWakeDelay(const uint32_t& delay);
+        uint32_t getWakeDelay();
 
         // get/set serial receive timeout
         // valid values are 0 ms - 65000 ms
         // set function returns MDOT_OK if success
-        int32_t setSerialReceiveTimeout(const uint16_t& timeout);
-        uint16_t getSerialReceiveTimeout();
+        int32_t setWakeTimeout(const uint16_t& timeout);
+        uint16_t getWakeTimeout();
+
+        // get/set serial wake mode
+        // valid values are INTERRUPT or RTC_ALARM
+        // set function returns MDOT_OK if success
+        int32_t setWakeMode(const uint8_t& delay);
+        uint8_t getWakeMode();
+
+        // Save user file data to flash
+        // file - name of file max 30 chars
+        // data - data of file
+        // size - size of file
+        bool saveUserFile(const char* file, void* data, uint32_t size);
+
+        // Append user file data to flash
+        // file - name of file max 30 chars
+        // data - data of file
+        // size - size of file
+        bool appendUserFile(const char* file, void* data, uint32_t size);
+
+        // Read user file data from flash
+        // file - name of file max 30 chars
+        // data - data of file
+        // size - size of file
+        bool readUserFile(const char* file, void* data, uint32_t size);
+
+        // Move a user file in flash
+        // file     - name of file
+        // new_name - new name of file
+        bool moveUserFile(const char* file, const char* new_name);
+
+        // Delete user file data from flash
+        // file - name of file max 30 chars
+        bool deleteUserFile(const char* file);
+
+        // Open user file in flash, max of 4 files open concurrently
+        // file - name of file max 30 chars
+        // mode - combination of FM_APPEND | FM_TRUNC | FM_CREAT |
+        //                       FM_RDONLY | FM_WRONLY | FM_RDWR | FM_DIRECT
+        // returns - mdot_file struct, fd field will be a negative value if file could not be opened
+        mDot::mdot_file openUserFile(const char* file, int mode);
+
+        // Seek an open file
+        // file - mdot file struct
+        // offset - offset in bytes
+        // whence - where offset is based SEEK_SET, SEEK_CUR, SEEK_END
+        bool seekUserFile(mDot::mdot_file& file, size_t offset, int whence);
+
+        // Read bytes from open file
+        // file - mdot file struct
+        // data - mem location to store data
+        // length - number of bytes to read
+        // returns - number of bytes written
+        int readUserFile(mDot::mdot_file& file, void* data, size_t length);
+
+        // Write bytes to open file
+        // file - mdot file struct
+        // data - data to write
+        // length - number of bytes to write
+        // returns - number of bytes written
+        int writeUserFile(mDot::mdot_file& file, void* data, size_t length);
+
+        // Close open file
+        // file - mdot file struct
+        bool closeUserFile(mDot::mdot_file& file);
+
+        // List user files stored in flash
+        std::vector<mDot::mdot_file> listUserFiles();
+
+        // Move file into the firmware upgrade path to be flashed on next boot
+        // file - name of file
+        bool moveUserFileToFirmwareUpgrade(const char* file);
+
+        // get current statistics
+        // Join Attempts, Join Fails, Up Packets, Down Packets, Missed Acks
+        mdot_stats getStats();
+
+        // reset statistics
+        // Join Attempts, Join Fails, Up Packets, Down Packets, Missed Acks
+        void resetStats();
+
+        // Convert pin number 2-8 to pin name DIO2-DI8
+        static PinName pinNum2Name(uint8_t num);
+
+        // Convert pin name DIO2-DI8 to pin number 2-8
+        static uint8_t pinName2Num(PinName name);
+
+        // Convert pin name DIO2-DI8 to string
+        static std::string pinName2Str(PinName name);
+
 
         uint64_t crc64(uint64_t crc, const unsigned char *s, uint64_t l);
 
         // MTS_RADIO_DEBUG_COMMANDS
+
+        void openRxWindow(uint32_t timeout, uint8_t bandwidth = 0);
         void sendContinuous();
         int32_t setDeviceId(const std::vector<uint8_t>& id);
         int32_t setFrequencyBand(const uint8_t& band);
@@ -710,9 +855,21 @@ class mDot {
         std::map<uint8_t, uint8_t> dumpRegisters();
         void eraseFlash();
 
-        mdot_stats getStats();
-        void resetStats();
 
+        // deprecated - use setWakeInterval
+        int32_t setSerialWakeInterval(const uint32_t& interval);
+        // deprecated - use getWakeInterval
+        uint32_t getSerialWakeInterval();
+
+        // deprecated - use setWakeDelay
+        int32_t setSerialWakeDelay(const uint32_t& delay);
+        // deprecated - use setWakeDelay
+        uint32_t getSerialWakeDelay();
+
+        // deprecated - use setWakeTimeout
+        int32_t setSerialReceiveTimeout(const uint16_t& timeout);
+        // deprecated - use getWakeTimeout
+        uint16_t getSerialReceiveTimeout();
 
     private:
         mdot_stats _stats;
