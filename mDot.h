@@ -1,10 +1,4 @@
-/************************************************
- * MultiTech MTDOT Library
- * Copyright (c) 2015 MultiTech Systems
- *
- * See LICENSE file for license information
- ***********************************************/
-
+// TODO: add license header
 
 #ifndef MDOT_H
 #define MDOT_H
@@ -76,7 +70,7 @@ class mDot {
         bool _activity_led_enable;
         PinName _activity_led_pin;
         bool _activity_led_external;
-        uint16_t _linkFailCount;
+        uint8_t _linkFailCount;
         uint8_t _class;
         InterruptIn* _wakeup;
         PinName _wakeup_pin;
@@ -142,6 +136,10 @@ class mDot {
             RTC_ALARM, INTERRUPT
         };
 
+        enum UserBackupRegs {
+            UBR0, UBR1, UBR2, UBR3, UBR4, UBR5, UBR6, UBR7, UBR8, UBR9
+        };
+
         typedef struct {
                 int16_t fd;
                 char name[30];
@@ -192,6 +190,8 @@ class mDot {
         static std::string DataRateStr(uint8_t rate);
         static std::string FrequencyBandStr(uint8_t band);
         static std::string FrequencySubBandStr(uint8_t band);
+
+        uint32_t UserRegisters[10];
 
         /** Get a handle to the singleton object
          * @returns pointer to mDot object
@@ -288,7 +288,6 @@ class mDot {
         uint8_t getFrequencySubBand();
 
         /** Enable/disable public network mode
-         * for use with Conduit gateway and MTAC_LORA, disable public network mode
          * @param on should be true to enable public network mode
          * @returns MDOT_OK if success
          */
@@ -663,6 +662,20 @@ class mDot {
          * @returns the pin to use to wake the device from sleep mode
          */
         PinName getWakePin();
+
+        /** Write data in a user backup register
+         * @param register one of UBR0 through UBR9
+         * @param data user data to back up
+         * @returns true if success
+         */
+        bool writeUserBackupRegister(uint32_t reg, uint32_t data);
+
+        /** Read data in a user backup register
+         * @param register one of UBR0 through UBR9
+         * @param data gets set to content of register
+         * @returns true if success
+         */
+        bool readUserBackupRegister(uint32_t reg, uint32_t& data);
 
         /******************************************
          * THESE FEATURES ARE NOT FULLY IMPLEMENTED
