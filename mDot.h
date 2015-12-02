@@ -76,7 +76,9 @@ class mDot {
         PinName _wakeup_pin;
 
         typedef enum {
-            OFF, ON, BLINK,
+            OFF,
+            ON,
+            BLINK,
         } state;
 
     public:
@@ -105,39 +107,71 @@ class mDot {
         } mdot_ret_code;
 
         enum JoinMode {
-            MANUAL, OTA, AUTO_OTA
+            MANUAL,
+            OTA,
+            AUTO_OTA
         };
 
         enum Mode {
-            COMMAND_MODE, SERIAL_MODE
+            COMMAND_MODE,
+            SERIAL_MODE
         };
 
         enum RX_Output {
-            HEXADECIMAL, BINARY
+            HEXADECIMAL,
+            BINARY
         };
 
         enum DataRates {
-            SF_12, SF_11, SF_10, SF_9, SF_8, SF_7, SF_7H, SF_50
+            SF_12,
+            SF_11,
+            SF_10,
+            SF_9,
+            SF_8,
+            SF_7,
+            SF_7H,
+            SF_50
         };
 
         enum FrequencyBands {
-            FB_868, FB_915
+            FB_868,
+            FB_915
         };
 
         enum FrequencySubBands {
-            FSB_ALL, FSB_1, FSB_2, FSB_3, FSB_4, FSB_5, FSB_6, FSB_7, FSB_8
+            FSB_ALL,
+            FSB_1,
+            FSB_2,
+            FSB_3,
+            FSB_4,
+            FSB_5,
+            FSB_6,
+            FSB_7,
+            FSB_8
         };
 
         enum JoinByteOrder {
-            LSB, MSB
+            LSB,
+            MSB
         };
 
         enum wakeup_mode {
-            RTC_ALARM, INTERRUPT
+            RTC_ALARM,
+            INTERRUPT,
+            RTC_ALARM_OR_INTERRUPT
         };
 
         enum UserBackupRegs {
-            UBR0, UBR1, UBR2, UBR3, UBR4, UBR5, UBR6, UBR7, UBR8, UBR9
+            UBR0,
+            UBR1,
+            UBR2,
+            UBR3,
+            UBR4,
+            UBR5,
+            UBR6,
+            UBR7,
+            UBR8,
+            UBR9
         };
 
         typedef struct {
@@ -274,7 +308,7 @@ class mDot {
 
         /** Set frequency sub band
          * only applicable if frequency band is set for United States (FB_915)
-         * sub band 0 will allow the radio to use all 64 channels 
+         * sub band 0 will allow the radio to use all 64 channels
          * sub band 1 - 8 will allow the radio to use the 8 channels in that sub band
          * for use with Conduit gateway and MTAC_LORA, use sub bands 1 - 8, not sub band 0
          * @param band the sub band to use (0 - 8)
@@ -288,6 +322,8 @@ class mDot {
         uint8_t getFrequencySubBand();
 
         /** Enable/disable public network mode
+         * JoinDelay will be set to (public: 5s, private: 1s) and
+         * RxDelay will be set to 1s both can be adjusted afterwards
          * @param on should be true to enable public network mode
          * @returns MDOT_OK if success
          */
@@ -302,6 +338,31 @@ class mDot {
          * @returns vector containing the device ID (size 8)
          */
         std::vector<uint8_t> getDeviceId();
+
+        /** Get the device port to be used for lora application data (1-223)
+         *  @returns port
+         */
+        uint8_t getAppPort();
+
+        /** Set the device port to be used for lora application data (1-223)
+         *  @returns MDOT_OK if success
+         */
+        int32_t setAppPort(uint8_t port);
+
+        /** Set the device class A, B or C
+         *  @returns MDOT_OK if success
+         */
+        int32_t setClass(std::string newClass);
+
+        /** Get the device class A, B or C
+         *  @returns MDOT_OK if success
+         */
+        std::string getClass();
+
+        /** Get the max packet length with current settings
+         * @returns max packet length
+         */
+        uint8_t getMaxPacketLength();
 
         /** Set network address
          * for use with MANUAL network join mode, will be assigned in OTA & AUTO_OTA modes
@@ -510,13 +571,54 @@ class mDot {
          */
         uint32_t getNextTxMs();
 
+        /** Get join delay in seconds
+         *  Public network defaults to 5 seconds
+         *  Private network defaults to 1 second
+         *  @returns number of seconds before join accept message is expected
+         */
+        uint8_t getJoinDelay();
+
+        /** Set join delay in seconds
+         *  Public network defaults to 5 seconds
+         *  Private network defaults to 1 second
+         *  @param delay number of seconds before join accept message is expected
+         *  @return MDOT_OK if success
+         */
+        uint32_t setJoinDelay(uint8_t delay);
+
+        /** Get rx delay in seconds
+         *  Defaults to 1 second
+         *  @returns number of seconds before response message is expected
+         */
+        uint8_t getRxDelay();
+
+        /** Set rx delay in seconds
+         *  Defaults to 1 second
+         *  @param delay number of seconds before response message is expected
+         *  @return MDOT_OK if success
+         */
+        uint32_t setRxDelay(uint8_t delay);
+
+        /** Get  preserve session to save network session info through reset or power down in AUTO_OTA mode
+         *  Defaults to off
+         *  @returns true if enabled
+         */
+        bool getPreserveSession();
+
+        /** Set preserve session to save network session info through reset or power down in AUTO_OTA mode
+         *  Defaults to off
+         *  @param enable
+         *  @return MDOT_OK if success
+         */
+        uint32_t setPreserveSession(bool enable);
+
         /** Get data pending
          * only valid after sending data to the gateway
          * @returns true if server has available packet(s)
          */
         bool getDataPending();
 
-        /** Get transmitting 
+        /** Get transmitting
          * @returns true if currently transmitting
          */
         bool getIsTransmitting();
@@ -621,7 +723,6 @@ class mDot {
          */
         int32_t recv(std::vector<uint8_t>& data);
 
-
         /** Ping
          * status will be MDOT_OK if ping succeeded
          * @returns ping_response struct containing status, RSSI, and SNR
@@ -639,14 +740,13 @@ class mDot {
         std::string getLastError();
 
         /** Go to sleep
-         * @param interval the number of seconds to sleep before waking up if wakeup_mode == RTC_ALARM, else ignored
-         * @param wakeup_mode RTC_ALARM, INTERRUPT
+         * @param interval the number of seconds to sleep before waking up if wakeup_mode == RTC_ALARM or RTC_ALARM_OR_INTERRUPT, else ignored
+         * @param wakeup_mode RTC_ALARM, INTERRUPT, RTC_ALARM_OR_INTERRUPT
          *      if RTC_ALARM the real time clock is configured to wake the device up after the specified interval
          *      if INTERRUPT the device will wake up on the rising edge of the interrupt pin
+         *      if RTC_ALARM_OR_INTERRUPT the device will wake on the first event to occur
          * @param deepsleep if true go into deep sleep mode (lowest power, all memory and registers are lost, peripherals turned off)
          *                  else go into sleep mode (low power, memory and registers are maintained, peripherals stay on)
-         *
-         * ** CURRENTLY ONLY DEEPSLEEP MODE IS AVAILABLE **
          *
          * in sleep mode, the device can be woken up on any of the XBEE pins or by the RTC alarm
          * in deepsleep mode, the device can only be woken up using the WKUP pin (PA0, XBEE_DIO7) or by the RTC alarm
@@ -853,7 +953,6 @@ class mDot {
         // Convert pin name DIO2-DI8 to string
         static std::string pinName2Str(PinName name);
 
-
         uint64_t crc64(uint64_t crc, const unsigned char *s, uint64_t l);
 
         // MTS_RADIO_DEBUG_COMMANDS
@@ -867,7 +966,6 @@ class mDot {
         int32_t setRadioMode(const uint8_t& mode);
         std::map<uint8_t, uint8_t> dumpRegisters();
         void eraseFlash();
-
 
         // deprecated - use setWakeInterval
         int32_t setSerialWakeInterval(const uint32_t& interval);

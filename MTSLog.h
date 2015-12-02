@@ -1,10 +1,3 @@
-/************************************************
- * MultiTech MTDOT Library
- * Copyright (c) 2015 MultiTech Systems
- *
- * See LICENSE file for license information
- ***********************************************/
-
 #ifndef MTSLOG_H
 #define MTSLOG_H
 
