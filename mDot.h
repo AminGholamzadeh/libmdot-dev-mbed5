@@ -134,8 +134,8 @@ class mDot {
         };
 
         enum FrequencyBands {
-            FB_868,
-            FB_915
+            FB_868, // EU868
+            FB_915  // US915
         };
 
         enum FrequencySubBands {
@@ -196,10 +196,10 @@ class mDot {
         } rssi_stats;
 
         typedef struct {
-                int8_t last;
-                int8_t min;
-                int8_t max;
-                int8_t avg;
+                int16_t last;
+                int16_t min;
+                int16_t max;
+                int16_t avg;
         } snr_stats;
 
         typedef struct {
@@ -556,12 +556,12 @@ class mDot {
         bool getAesEncryption();
 
         /** Get RSSI stats
-         * @returns rssi_stats struct containing last, min, max, and avg RSSI
+         * @returns rssi_stats struct containing last, min, max, and avg RSSI in dB
          */
         rssi_stats getRssiStats();
 
         /** Get SNR stats
-         * @returns snr_stats struct containing last, min, max, and avg SNR
+         * @returns snr_stats struct containing last, min, max, and avg SNR in cB
          */
         snr_stats getSnrStats();
 
@@ -625,15 +625,40 @@ class mDot {
 
         /** Set TX data rate
          * data rates affect maximum payload size
-         * @param dr SF_7 - SF_12 for Europe, SF_7 - SF_10 for United States
+         * @param dr SF_7 - SF_12|DR0-DR7 for Europe, SF_7 - SF_10 | DR0-DR4 for United States
          * @returns MDOT_OK if success
          */
         int32_t setTxDataRate(const uint8_t& dr);
 
         /** Get TX data rate
-         * @returns current TX data rate (SF_7 - SF_12)
+         * @returns current TX data rate (DR0-DR15)
          */
         uint8_t getTxDataRate();
+
+
+        /** Get data rate spreading factor and bandwidth
+         * EU868 Datarates
+         * ---------------
+         * DR0 - SF12BW125
+         * DR1 - SF11BW125
+         * DR2 - SF10BW125
+         * DR3 - SF9BW125
+         * DR4 - SF8BW125
+         * DR5 - SF7BW125
+         * DR6 - SF7BW250
+         * DR7 - FSK
+         *
+         * US915 Datarates
+         * ---------------
+         * DR0 - SF10BW125
+         * DR1 - SF9BW125
+         * DR2 - SF8BW125
+         * DR3 - SF7BW125
+         * DR4 - SF8BW500
+         *
+         * @returns spreading factor and bandwidth
+         */
+        std::string getDateRateDetails(uint8_t rate);
 
         /** Set TX power
          * power affects maximum range
@@ -646,6 +671,17 @@ class mDot {
          * @returns TX power (2 dBm - 20 dBm)
          */
         uint32_t getTxPower();
+
+        /** Get configured gain of installed antenna
+         * @returns gain of antenna in dBi
+         */
+        int8_t getAntennaGain();
+
+        /** Set configured gain of installed antenna
+         * @param gain -127 dBi - 128 dBi
+         * @returns MDOT_OK if success
+         */
+        int32_t setAntennaGain(int8_t gain);
 
         /** Enable/disable TX waiting for rx windows
          * when enabled, send calls will block until a packet is received or RX timeout
@@ -748,18 +784,18 @@ class mDot {
          * @param deepsleep if true go into deep sleep mode (lowest power, all memory and registers are lost, peripherals turned off)
          *                  else go into sleep mode (low power, memory and registers are maintained, peripherals stay on)
          *
-         * in sleep mode, the device can be woken up on any of the XBEE pins or by the RTC alarm
+         * in sleep mode, the device can be woken up on an XBEE_DI (2-8) pin or by the RTC alarm
          * in deepsleep mode, the device can only be woken up using the WKUP pin (PA0, XBEE_DIO7) or by the RTC alarm
          */
         void sleep(const uint32_t& interval, const uint8_t& wakeup_mode = RTC_ALARM, const bool& deepsleep = true);
 
         /** Set wake pin
-         * @param pin the pin to use to wake the device from sleep mode
+         * @param pin the pin to use to wake the device from sleep mode XBEE_DI (2-8)
          */
         void setWakePin(const PinName& pin);
 
         /** Get wake pin
-         * @returns the pin to use to wake the device from sleep mode
+         * @returns the pin to use to wake the device from sleep mode XBEE_DI (2-8)
          */
         PinName getWakePin();
 
@@ -776,100 +812,6 @@ class mDot {
          * @returns true if success
          */
         bool readUserBackupRegister(uint32_t reg, uint32_t& data);
-
-        /******************************************
-         * THESE FEATURES ARE NOT FULLY IMPLEMENTED
-         *****************************************/
-        // get/set adaptive data rate
-        // configure data rates and power levels based on signal to noise information from gateway
-        // true == adaptive data rate is on
-        // set function returns MDOT_OK if success
-        int32_t setAdr(const bool& on);
-        bool getAdr();
-
-        /*************************************************************************
-         * The following functions are only used by the AT command application and
-         * should not be used by standard applications consuming the mDot library
-         ************************************************************************/
-
-        // set/get configured baud rate for command port
-        // only for use in conjunction with AT interface
-        // set function returns MDOT_OK if success
-        int32_t setBaud(const uint32_t& baud);
-        uint32_t getBaud();
-
-        // set/get baud rate for debug port
-        // set function returns MDOT_OK if success
-        int32_t setDebugBaud(const uint32_t& baud);
-        uint32_t getDebugBaud();
-
-        // set/get command terminal echo
-        // set function returns MDOT_OK if success
-        int32_t setEcho(const bool& on);
-        bool getEcho();
-
-        // set/get command terminal verbose mode
-        // set function returns MDOT_OK if success
-        int32_t setVerbose(const bool& on);
-        bool getVerbose();
-
-        // set/get startup mode
-        // COMMAND_MODE (default), starts up ready to accept AT commands
-        // SERIAL_MODE, read serial data and send it as LoRa packets
-        // set function returns MDOT_OK if success
-        int32_t setStartUpMode(const uint8_t& mode);
-        uint8_t getStartUpMode();
-
-        int32_t setRxDataRate(const uint8_t& dr);
-        uint8_t getRxDataRate();
-
-        // get/set TX/RX frequency
-        // if frequency band == FB_868 (Europe), must be between 863000000 - 870000000
-        // if frequency band == FB_915 (United States), must be between 902000000-928000000
-        // if set to 0, device will hop frequencies
-        // set function returns MDOT_OK if success
-        int32_t setTxFrequency(const uint32_t& freq);
-        uint32_t getTxFrequency();
-        int32_t setRxFrequency(const uint32_t& freq);
-        uint32_t getRxFrequency();
-
-        // get/set TX/RX inverted
-        // true == signal is inverted
-        // set function returns MDOT_OK if success
-        int32_t setTxInverted(const bool& on);
-        bool getTxInverted();
-        int32_t setRxInverted(const bool& on);
-        bool getRxInverted();
-
-        // get/set RX output mode
-        // valid options are HEXADECIMAL and BINARY
-        // set function returns MDOT_OK if success
-        int32_t setRxOutput(const uint8_t& mode);
-        uint8_t getRxOutput();
-
-        // get/set serial wake interval
-        // valid values are 2 s - INT_MAX (2147483647) s
-        // set function returns MDOT_OK if success
-        int32_t setWakeInterval(const uint32_t& interval);
-        uint32_t getWakeInterval();
-
-        // get/set serial wake delay
-        // valid values are 2 ms - INT_MAX (2147483647) ms
-        // set function returns MDOT_OK if success
-        int32_t setWakeDelay(const uint32_t& delay);
-        uint32_t getWakeDelay();
-
-        // get/set serial receive timeout
-        // valid values are 0 ms - 65000 ms
-        // set function returns MDOT_OK if success
-        int32_t setWakeTimeout(const uint16_t& timeout);
-        uint16_t getWakeTimeout();
-
-        // get/set serial wake mode
-        // valid values are INTERRUPT or RTC_ALARM
-        // set function returns MDOT_OK if success
-        int32_t setWakeMode(const uint8_t& delay);
-        uint8_t getWakeMode();
 
         // Save user file data to flash
         // file - name of file max 30 chars
@@ -955,6 +897,101 @@ class mDot {
 
         uint64_t crc64(uint64_t crc, const unsigned char *s, uint64_t l);
 
+        /*************************************************************************
+         * The following functions are only used by the AT command application and
+         * should not be used by standard applications consuming the mDot library
+         ************************************************************************/
+
+        // set/get configured baud rate for command port
+        // only for use in conjunction with AT interface
+        // set function returns MDOT_OK if success
+        int32_t setBaud(const uint32_t& baud);
+        uint32_t getBaud();
+
+        // set/get baud rate for debug port
+        // set function returns MDOT_OK if success
+        int32_t setDebugBaud(const uint32_t& baud);
+        uint32_t getDebugBaud();
+
+        // set/get command terminal echo
+        // set function returns MDOT_OK if success
+        int32_t setEcho(const bool& on);
+        bool getEcho();
+
+        // set/get command terminal verbose mode
+        // set function returns MDOT_OK if success
+        int32_t setVerbose(const bool& on);
+        bool getVerbose();
+
+        // set/get startup mode
+        // COMMAND_MODE (default), starts up ready to accept AT commands
+        // SERIAL_MODE, read serial data and send it as LoRa packets
+        // set function returns MDOT_OK if success
+        int32_t setStartUpMode(const uint8_t& mode);
+        uint8_t getStartUpMode();
+
+        int32_t setRxDataRate(const uint8_t& dr);
+        uint8_t getRxDataRate();
+
+        // get/set TX/RX frequency
+        // if frequency band == FB_868 (Europe), must be between 863000000 - 870000000
+        // if frequency band == FB_915 (United States), must be between 902000000-928000000
+        // if set to 0, device will hop frequencies
+        // set function returns MDOT_OK if success
+        int32_t setTxFrequency(const uint32_t& freq);
+        uint32_t getTxFrequency();
+        int32_t setRxFrequency(const uint32_t& freq);
+        uint32_t getRxFrequency();
+
+        // get/set TX/RX inverted
+        // true == signal is inverted
+        // set function returns MDOT_OK if success
+        int32_t setTxInverted(const bool& on);
+        bool getTxInverted();
+        int32_t setRxInverted(const bool& on);
+        bool getRxInverted();
+
+        // get/set RX output mode
+        // valid options are HEXADECIMAL and BINARY
+        // set function returns MDOT_OK if success
+        int32_t setRxOutput(const uint8_t& mode);
+        uint8_t getRxOutput();
+
+        // get/set serial wake interval
+        // valid values are 2 s - INT_MAX (2147483647) s
+        // set function returns MDOT_OK if success
+        int32_t setWakeInterval(const uint32_t& interval);
+        uint32_t getWakeInterval();
+
+        // get/set serial wake delay
+        // valid values are 2 ms - INT_MAX (2147483647) ms
+        // set function returns MDOT_OK if success
+        int32_t setWakeDelay(const uint32_t& delay);
+        uint32_t getWakeDelay();
+
+        // get/set serial receive timeout
+        // valid values are 0 ms - 65000 ms
+        // set function returns MDOT_OK if success
+        int32_t setWakeTimeout(const uint16_t& timeout);
+        uint16_t getWakeTimeout();
+
+        // get/set serial wake mode
+        // valid values are INTERRUPT or RTC_ALARM
+        // set function returns MDOT_OK if success
+        int32_t setWakeMode(const uint8_t& delay);
+        uint8_t getWakeMode();
+
+        /******************************************
+         * THESE FEATURES ARE NOT FULLY IMPLEMENTED
+         *****************************************/
+
+        // get/set adaptive data rate
+        // configure data rates and power levels based on signal to noise information from gateway
+        // true == adaptive data rate is on
+        // set function returns MDOT_OK if success
+        int32_t setAdr(const bool& on);
+        bool getAdr();
+
         // MTS_RADIO_DEBUG_COMMANDS
 
         void openRxWindow(uint32_t timeout, uint8_t bandwidth = 0);
@@ -982,8 +1019,17 @@ class mDot {
         // deprecated - use getWakeTimeout
         uint16_t getSerialReceiveTimeout();
 
+        void setWakeupCallback(void (*function)(void));
+
+        template<typename T>
+        void setWakeupCallback(T *object, void (T::*member)(void)) {
+            _wakeup_callback.attach(object, member);
+        }
+
     private:
         mdot_stats _stats;
+
+        FunctionPointer _wakeup_callback;
 
 };
 
