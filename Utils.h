@@ -20,7 +20,7 @@ enum RelationalOperator {
 * @param relationalOperator a RelationalOperator enumeration.
 * @returns the enumeration name as a string.
 */
-static std::string getRelationalOperatorNames(RelationalOperator relationalOperator)
+static inline std::string getRelationalOperatorNames(RelationalOperator relationalOperator)
 {
     switch(relationalOperator) {
         case GREATER:

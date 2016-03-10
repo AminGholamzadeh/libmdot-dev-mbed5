@@ -9,6 +9,7 @@
 #include <map>
 #include <string>
 
+class mDotEvent;
 class LoRaMacEvent;
 class LoRaConfig;
 class LoRaMac;
@@ -54,6 +55,9 @@ class mDot {
         void RTC_WriteBackupRegister(uint32_t RTC_BKP_DR, uint32_t Data);
 
         void wakeup();
+
+        void enterStopMode(const uint32_t& interval, const uint8_t& wakeup_mode = RTC_ALARM);
+        void enterStandbyMode(const uint32_t& interval, const uint8_t& wakeup_mode = RTC_ALARM);
 
         static mDot* _instance;
 
@@ -103,13 +107,17 @@ class mDot {
             MDOT_NOT_JOINED = -6,
             MDOT_ENCRYPTION_DISABLED = -7,
             MDOT_NO_FREE_CHAN = -8,
+            MDOT_TEST_MODE = -9,
+            MDOT_NO_ENABLED_CHAN = -10,
+            MDOT_AGGREGATED_DUTY_CYCLE = -11,
             MDOT_ERROR = -1024,
         } mdot_ret_code;
 
         enum JoinMode {
             MANUAL,
             OTA,
-            AUTO_OTA
+            AUTO_OTA,
+            PEER_TO_PEER
         };
 
         enum Mode {
@@ -123,14 +131,30 @@ class mDot {
         };
 
         enum DataRates {
-            SF_12,
+            DR0,
+            DR1,
+            DR2,
+            DR3,
+            DR4,
+            DR5,
+            DR6,
+            DR7,
+            DR8,
+            DR9,
+            DR10,
+            DR11,
+            DR12,
+            DR13,
+            DR14,
+            DR15,
+            SF_12 = 16,
             SF_11,
             SF_10,
             SF_9,
             SF_8,
             SF_7,
             SF_7H,
-            SF_50
+            SF_FSK
         };
 
         enum FrequencyBands {
@@ -232,6 +256,8 @@ class mDot {
          */
         static mDot* getInstance();
 
+        void setEvents(mDotEvent* events);
+
         /** Get library version information
          * @returns string containing library version information
          */
@@ -269,6 +295,11 @@ class mDot {
          */
         uint8_t getLogLevel();
 
+        /** Seed pseudo RNG in LoRaMac layer, uses random value from radio RSSI reading by default
+         * @param seed for RNG
+         */
+        void seedRandom(uint32_t seed);
+
         /** Enable or disable the activity LED.
          * @param enable true to enable the LED, false to disable
          */
@@ -296,10 +327,35 @@ class mDot {
          */
         PinName getActivityLedPin();
 
+        /** Returns boolean indicative of start-up from standby mode
+         * @returns true if dot woke from standby
+         */
+        bool getStandbyFlag();
+
+        /** Add a channel frequencies currently in use
+         * @returns MDOT_OK
+         */
+        int32_t addChannel(uint8_t index, uint32_t frequency, uint8_t datarateRange);
+
         /** Get list of channel frequencies currently in use
          * @returns vector of channels currently in use
          */
         std::vector<uint32_t> getChannels();
+
+        /** Get list of channel datarate ranges currently in use
+         * @returns vector of datarate ranges currently in use
+         */
+        std::vector<uint8_t> getChannelRanges();
+
+        /** Get list of channel frequencies in config file to be used as session defaults
+         * @returns vector of channels in config file
+         */
+        std::vector<uint32_t> getConfigChannels();
+
+        /** Get list of channel datarate ranges in config file to be used as session defaults
+         * @returns vector of datarate ranges in config file
+         */
+        std::vector<uint8_t> getConfigChannelRanges();
 
         /** Get frequency band
          * @returns FB_915 if configured for United States, FB_868 if configured for Europe
@@ -320,6 +376,11 @@ class mDot {
          * @returns frequency sub band currently in use
          */
         uint8_t getFrequencySubBand();
+
+        /** Get the datarate currently in use within the MAC layer
+         * returns 0-15
+         */
+        uint8_t getSessionDataRate();
 
         /** Enable/disable public network mode
          * JoinDelay will be set to (public: 5s, private: 1s) and
@@ -463,7 +524,9 @@ class mDot {
         uint8_t getJoinByteOrder();
 
         /** Attempt to join network
-         * retries according to configuration set by setJoinRetries()
+         * each attempt will be made with a random datarate up to the configured datarate
+         * JoinRequest backoff between tries is enforced to 1% for 1st hour, 0.1% for 1-10 hours and 0.01% after 10 hours
+         * Check getNextTxMs() for time until next join attempt can be made
          * @returns MDOT_OK if success
          */
         int32_t joinNetwork();
@@ -477,6 +540,16 @@ class mDot {
          * has no effect for MANUAL network join mode
          */
         void resetNetworkSession();
+
+        /** Restore saved network session from flash
+         * has no effect for MANUAL network join mode
+         */
+        void restoreNetworkSession();
+
+        /** Save current network session to flash
+         * has no effect for MANUAL network join mode
+         */
+        void saveNetworkSession();
 
         /** Set number of times joining will retry before giving up
          * @param retries must be between 0 - 255
@@ -538,10 +611,31 @@ class mDot {
          */
         uint8_t getLinkCheckThreshold();
 
+        /** Get/set number of failed link checks in the current session
+         * @returns count (0 - 255)
+         */
+        uint8_t getLinkFailCount();
+        int32_t setLinkFailCount(uint8_t count);
+
+        /** Set UpLinkCounter number of packets sent to the gateway during this network session (sequence number)
+         * @returns MDOT_OK
+         */
+        int32_t setUpLinkCounter(uint32_t count);
+
         /** Get UpLinkCounter
          * @returns number of packets sent to the gateway during this network session (sequence number)
          */
         uint32_t getUpLinkCounter();
+
+        /** Set UpLinkCounter number of packets sent by the gateway during this network session (sequence number)
+         * @returns MDOT_OK
+         */
+        int32_t setDownLinkCounter(uint32_t count);
+
+        /** Get DownLinkCounter
+         * @returns number of packets sent by the gateway during this network session (sequence number)
+         */
+        uint32_t getDownLinkCounter();
 
         /** Enable/disable AES encryption
          * AES encryption must be enabled for use with Conduit gateway and MTAC_LORA card
@@ -635,6 +729,11 @@ class mDot {
          */
         uint8_t getTxDataRate();
 
+        /** Get a random value from the radio based on RSSI
+         *  @returns randome value
+         */
+        uint32_t getRadioRandom();
+
 
         /** Get data rate spreading factor and bandwidth
          * EU868 Datarates
@@ -660,7 +759,8 @@ class mDot {
          */
         std::string getDateRateDetails(uint8_t rate);
 
-        /** Set TX power
+        /** Set TX power output of radio before antenna gain, default: 14 dBm
+         * actual output power may be limited by local regulations for the chosen frequency
          * power affects maximum range
          * @param power 2 dBm - 20 dBm
          * @returns MDOT_OK if success
@@ -672,12 +772,12 @@ class mDot {
          */
         uint32_t getTxPower();
 
-        /** Get configured gain of installed antenna
+        /** Get configured gain of installed antenna, default: +3 dBi
          * @returns gain of antenna in dBi
          */
         int8_t getAntennaGain();
 
-        /** Set configured gain of installed antenna
+        /** Set configured gain of installed antenna, default: +3 dBi
          * @param gain -127 dBi - 128 dBi
          * @returns MDOT_OK if success
          */
@@ -709,6 +809,13 @@ class mDot {
          * @returns maximum frequency based on current configuration
          */
         uint32_t getMaxFrequency();
+
+        // get/set adaptive data rate
+        // configure data rates and power levels based on signal to noise of packets received at gateway
+        // true == adaptive data rate is on
+        // set function returns MDOT_OK if success
+        int32_t setAdr(const bool& on);
+        bool getAdr();
 
         /** Set forward error correction bytes
          * @param bytes 1 - 4 bytes
@@ -743,6 +850,17 @@ class mDot {
          * @returns 0 if acks are disabled, otherwise retries (1 - 8)
          */
         uint8_t getAck();
+
+        /** Set number of packet repeats for unconfirmed frames
+         * @param repeat 0 or 1 for no repeats, otherwise 2-15
+         * @returns MDOT_OK if success
+         */
+        int32_t setRepeat(const uint8_t& repeat);
+
+        /** Get number of packet repeats for unconfirmed frames
+         * @returns 0 or 1 if no repeats, otherwise 2-15
+         */
+        uint8_t getRepeat();
 
         /** Send data to the gateway
          * validates data size (based on spreading factor)
@@ -981,16 +1099,17 @@ class mDot {
         int32_t setWakeMode(const uint8_t& delay);
         uint8_t getWakeMode();
 
-        /******************************************
-         * THESE FEATURES ARE NOT FULLY IMPLEMENTED
-         *****************************************/
-
-        // get/set adaptive data rate
-        // configure data rates and power levels based on signal to noise information from gateway
-        // true == adaptive data rate is on
+        // get/set serial flow control enabled
         // set function returns MDOT_OK if success
-        int32_t setAdr(const bool& on);
-        bool getAdr();
+        int32_t setFlowControl(const bool& on);
+        bool getFlowControl();
+
+
+        // get/set serial clear on error
+        // if enabled the data read from the serial port will be discarded if it cannot be sent or if the send fails
+        // set function returns MDOT_OK if success
+        int32_t setSerialClearOnError(const bool& on);
+        bool getSerialClearOnError();
 
         // MTS_RADIO_DEBUG_COMMANDS
 
@@ -1030,6 +1149,11 @@ class mDot {
         mdot_stats _stats;
 
         FunctionPointer _wakeup_callback;
+
+        bool _standbyFlag;
+        bool _testMode;
+        uint8_t _savedPort;
+        void handleTestModePacket();
 
 };
 
