@@ -6,19 +6,9 @@ This README should get you started using the mDot library with your MultiTech mD
 
 License information can be found in the accompanying LICENSE file.
 
-The mDot header has documentation for all the public functions that will be useful to consumers of
-the library.
+The mDot header has documentation for all the public functions that will be useful to consumers of the library.
 
-The following source code provides an example application which configures the mDot, connects to a
-MultiTech Conduit gateway with matching configuration, and sends data packets to the gateway.
-
-NOTE: All applications built using the mDot library must include mbed-src instead of mbed and must
-have the "newboards" beta token enabled.  This is to resolve a stack size issue that may be
-encountered otherwise.  A fix is on its way to the regular mbed library, but these extra steps are
-required until then.  To enable the "newboards" beta token, go to the page listed below, click
-enable, and completely refresh your online compiler.
-
-https://developer.mbed.org/betamode/?pre=newboards
+The following source code provides an example application which configures the mDot, connects to a MultiTech Conduit gateway with matching configuration, and sends data packets to the gateway.
 
 /**************
   SAMPLE CODE
