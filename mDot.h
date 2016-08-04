@@ -5,17 +5,16 @@
 
 #include "mbed.h"
 #include "rtos.h"
+#include "Mote.h"
 #include <vector>
 #include <map>
 #include <string>
 
 class mDotEvent;
-class LoRaMacEvent;
 class LoRaConfig;
-class LoRaMac;
-class MdotRadio;
 
 class mDot {
+        friend class mDotEvent;
 
     private:
 
@@ -26,6 +25,8 @@ class mDot {
             while (1)
                 __WFI();
         }
+
+        void initLora();
 
         void setLastError(const std::string& str);
 
@@ -61,10 +62,11 @@ class mDot {
 
         static mDot* _instance;
 
-        LoRaMac* _mac;
-        MdotRadio* _radio;
-        LoRaMacEvent* _events;
+        lora::Mote _mote;
         LoRaConfig* _config;
+        lora::Settings _settings;
+        mDotEvent* _events;
+
         Thread _idle_thread;
         std::string _last_error;
         static const uint32_t _baud_rates[];
@@ -114,7 +116,7 @@ class mDot {
         } mdot_ret_code;
 
         enum JoinMode {
-            MANUAL,
+            MANUAL = 0,
             OTA,
             AUTO_OTA,
             PEER_TO_PEER
@@ -158,8 +160,11 @@ class mDot {
         };
 
         enum FrequencyBands {
-            FB_868, // EU868
-            FB_915  // US915
+            FB_868 = 0,
+            FB_915 = 1,
+            FB_EU868 = 0, // EU868
+            FB_US915 = 1,  // US915
+            FB_AU915 = 2
         };
 
         enum FrequencySubBands {
@@ -200,7 +205,7 @@ class mDot {
 
         typedef struct {
                 int16_t fd;
-                char name[30];
+                char name[33];
                 uint32_t size;
         } mdot_file;
 
@@ -210,6 +215,7 @@ class mDot {
                 uint32_t Joins;
                 uint32_t JoinFails;
                 uint32_t MissedAcks;
+                uint32_t CRCErrors;
         } mdot_stats;
 
         typedef struct {
@@ -331,6 +337,10 @@ class mDot {
          * @returns true if dot woke from standby
          */
         bool getStandbyFlag();
+
+        std::vector<uint16_t> getChannelMask();
+
+        int32_t setChannelMask(uint8_t offset, uint16_t mask);
 
         /** Add a channel frequencies currently in use
          * @returns MDOT_OK
@@ -680,6 +690,42 @@ class mDot {
          */
         uint32_t setJoinDelay(uint8_t delay);
 
+        /** Get join Rx1 datarate offset
+         *  defaults to 0
+         *  @returns offset
+         */
+        uint8_t getJoinRx1DataRateOffset();
+
+        /** Set join Rx1 datarate offset
+         *  @param offset for datarate
+         *  @return MDOT_OK if success
+         */
+        uint32_t setJoinRx1DataRateOffset(uint8_t offset);
+
+        /** Get join Rx2 datarate
+         *  defaults to US:DR8, AU:DR8, EU:DR0
+         *  @returns datarate
+         */
+        uint8_t getJoinRx2DataRate();
+
+        /** Set join Rx2 datarate
+         *  @param datarate
+         *  @return MDOT_OK if success
+         */
+        uint32_t setJoinRx2DataRate(uint8_t datarate);
+
+        /** Get join Rx2 frequency
+         *  defaults US:923.3, AU:923.3, EU:869.525
+         *  @returns frequency
+         */
+        uint32_t getJoinRx2Frequency();
+
+        /** Set join Rx2 frequency
+         *  @param frequency
+         *  @return MDOT_OK if success
+         */
+        uint32_t setJoinRx2Frequency(uint32_t frequency);
+
         /** Get rx delay in seconds
          *  Defaults to 1 second
          *  @returns number of seconds before response message is expected
@@ -712,10 +758,21 @@ class mDot {
          */
         bool getDataPending();
 
-        /** Get transmitting
+        /** Get ack requested
+         * only valid after sending data to the gateway
+         * @returns true if server has requested ack
+         */
+        bool getAckRequested();
+
+        /** Get is transmitting indicator
          * @returns true if currently transmitting
          */
         bool getIsTransmitting();
+
+        /** Get is idle indicator
+         * @returns true if not currently transmitting, waiting or receiving
+         */
+        bool getIsIdle();
 
         /** Set TX data rate
          * data rates affect maximum payload size
@@ -733,7 +790,6 @@ class mDot {
          *  @returns randome value
          */
         uint32_t getRadioRandom();
-
 
         /** Get data rate spreading factor and bandwidth
          * EU868 Datarates
@@ -794,6 +850,10 @@ class mDot {
          * @returns true if TX wait is enabled
          */
         bool getTxWait();
+
+        /** Cancel pending rx windows
+         */
+        void cancelRxWindow();
 
         /** Get time on air
          * @returns the amount of time (in ms) it would take to send bytes bytes based on current configuration
@@ -868,6 +928,24 @@ class mDot {
          * @returns MDOT_OK if packet was sent successfully (ACKs disabled), or if an ACK was received (ACKs enabled)
          */
         int32_t send(const std::vector<uint8_t>& data, const bool& blocking = true, const bool& highBw = false);
+
+        /** Inject mac command
+         * @param data a vector containing mac commands
+         * @returns MDOT_OK
+         */
+        int32_t injectMacCommand(const std::vector<uint8_t>& data);
+
+        /**
+         * Clear MAC command buffer to be sent in next uplink
+         * @returns MDOT_OK
+         */
+        int32_t clearMacCommands();
+
+        /**
+         * Get MAC command buffer to be sent in next uplink
+         * @returns command bytes
+         */
+        std::vector<uint8_t> getMacCommands();
 
         /** Fetch data received from the gateway
          * this function only checks to see if a packet has been received - it does not open a receive window
@@ -1104,7 +1182,6 @@ class mDot {
         int32_t setFlowControl(const bool& on);
         bool getFlowControl();
 
-
         // get/set serial clear on error
         // if enabled the data read from the serial port will be discarded if it cannot be sent or if the send fails
         // set function returns MDOT_OK if success
@@ -1113,8 +1190,26 @@ class mDot {
 
         // MTS_RADIO_DEBUG_COMMANDS
 
+        /** Disable Duty cycle
+         * enables or disables the duty cycle limitations
+         * **** ONLY TO BE USED FOR TESTINGS PURPOSES ****
+         * **** ALL DEPLOYABLE CODE MUST ADHERE TO LOCAL REGULATIONS ****
+         * **** THIS SETTING WILL NOT BE SAVED TO CONFIGURATION *****
+         * @param val true to disable duty-cycle (default:false)
+         */
+        int32_t setDisableDutyCycle(bool val);
+
+        /** Disable Duty cycle
+         * **** ONLY TO BE USED FOR TESTINGS PURPOSES ****
+         * **** ALL DEPLOYABLE CODE MUST ADHERE TO LOCAL REGULATIONS ****
+         * **** THIS SETTING WILL NOT BE SAVED TO CONFIGURATION *****
+         * @return true if duty-cycle is disabled (default:false)
+         */
+        uint8_t getDisableDutyCycle();
+
         void openRxWindow(uint32_t timeout, uint8_t bandwidth = 0);
-        void sendContinuous();
+        void closeRxWindow();
+        void sendContinuous(bool enable=true);
         int32_t setDeviceId(const std::vector<uint8_t>& id);
         int32_t setFrequencyBand(const uint8_t& band);
         bool saveProtectedConfig();
