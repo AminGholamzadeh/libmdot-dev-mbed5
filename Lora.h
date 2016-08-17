@@ -286,7 +286,8 @@ namespace lora {
         MAC_RX1,
         MAC_RX2,
         MAC_RXC,
-        MAC_TX
+        MAC_TX,
+        MAC_JOIN
     };
 
     /**
@@ -704,4 +705,5 @@ namespace lora {
 }
 
 #endif
+
 

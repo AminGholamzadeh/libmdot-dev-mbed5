@@ -295,3 +295,4 @@ class mDotEvent: public lora::MacEvents {
 };
 
 #endif // __MDOT_EVENT_H__
+

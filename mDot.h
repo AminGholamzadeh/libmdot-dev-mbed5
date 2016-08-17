@@ -561,13 +561,14 @@ class mDot {
          */
         void saveNetworkSession();
 
-        /** Set number of times joining will retry before giving up
+        /** Set number of times joining will retry each sub-band before changing
+         * to the next subband in US915 and AU915
          * @param retries must be between 0 - 255
          * @returns MDOT_OK if success
          */
         int32_t setJoinRetries(const uint8_t& retries);
 
-        /** Set number of times joining will retry before giving up
+        /** Get number of times joining will retry each sub-band
          * @returns join retries (0 - 255)
          */
         uint8_t getJoinRetries();
@@ -804,6 +805,14 @@ class mDot {
          * DR7 - FSK
          *
          * US915 Datarates
+         * ---------------
+         * DR0 - SF10BW125
+         * DR1 - SF9BW125
+         * DR2 - SF8BW125
+         * DR3 - SF7BW125
+         * DR4 - SF8BW500
+         *
+         * AU915 Datarates
          * ---------------
          * DR0 - SF10BW125
          * DR1 - SF9BW125
@@ -1253,3 +1262,4 @@ class mDot {
 };
 
 #endif
+
