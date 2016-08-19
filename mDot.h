@@ -89,6 +89,7 @@ class mDot {
 
     public:
 
+#if defined(TARGET_MTS_MDOT_F411RE)
         typedef enum {
             FM_APPEND = (1 << 0),
             FM_TRUNC = (1 << 1),
@@ -98,6 +99,7 @@ class mDot {
             FM_RDWR = (FM_RDONLY | FM_WRONLY),
             FM_DIRECT = (1 << 5)
         } FileMode;
+#endif /* TARGET_MTS_MDOT_F411RE */
 
         typedef enum {
             MDOT_OK = 0,
@@ -201,13 +203,29 @@ class mDot {
             UBR7,
             UBR8,
             UBR9
+#if defined (TARGET_XDOT_L151CC)
+           ,UBR10,
+            UBR11,
+            UBR12,
+            UBR13,
+            UBR14,
+            UBR15,
+            UBR16,
+            UBR17,
+            UBR18,
+            UBR19,
+            UBR20,
+            UBR21
+#endif /* TARGET_XDOT_L151CC */
         };
 
+#if defined(TARGET_MTS_MDOT_F411RE)
         typedef struct {
                 int16_t fd;
                 char name[33];
                 uint32_t size;
         } mdot_file;
+#endif /* TARGET_MTS_MDOT_F411RE */
 
         typedef struct {
                 uint32_t Up;
@@ -255,7 +273,11 @@ class mDot {
         static std::string FrequencyBandStr(uint8_t band);
         static std::string FrequencySubBandStr(uint8_t band);
 
+#if defined(TARGET_MTS_MDOT_F411RE)
         uint32_t UserRegisters[10];
+#else
+        uint32_t UserRegisters[22];
+#endif /* TARGET_MTS_MDOT_F411RE */
 
         /** Get a handle to the singleton object
          * @returns pointer to mDot object
@@ -989,35 +1011,44 @@ class mDot {
          * @param deepsleep if true go into deep sleep mode (lowest power, all memory and registers are lost, peripherals turned off)
          *                  else go into sleep mode (low power, memory and registers are maintained, peripherals stay on)
          *
-         * in sleep mode, the device can be woken up on an XBEE_DI (2-8) pin or by the RTC alarm
-         * in deepsleep mode, the device can only be woken up using the WKUP pin (PA0, XBEE_DIO7) or by the RTC alarm
+         * For the MDOT
+         *      in sleep mode, the device can be woken up on an XBEE_DI (2-8) pin or by the RTC alarm
+         *      in deepsleep mode, the device can only be woken up using the WKUP pin (PA0, XBEE_DIO7) or by the RTC alarm
+         * For the XDOT
+         *      in sleep mode, the device can be woken up on GPIO (0-3), UART1_RX, WAKE or by the RTC alarm
+         *      in deepsleep mode, the device can only be woken up using the WKUP pin (PA0, WAKE) or by the RTC alarm
          */
         void sleep(const uint32_t& interval, const uint8_t& wakeup_mode = RTC_ALARM, const bool& deepsleep = true);
 
         /** Set wake pin
-         * @param pin the pin to use to wake the device from sleep mode XBEE_DI (2-8)
+         * @param pin the pin to use to wake the device from sleep mode
+         *      For MDOT, XBEE_DI (2-8)
+         *      For XDOT, GPIO (0-3), UART1_RX, or WAKE
          */
         void setWakePin(const PinName& pin);
 
         /** Get wake pin
-         * @returns the pin to use to wake the device from sleep mode XBEE_DI (2-8)
+         * @returns the pin to use to wake the device from sleep mode
+         *      For MDOT, XBEE_DI (2-8)
+         *      For XDOT, GPIO (0-3), UART1_RX, or WAKE
          */
         PinName getWakePin();
 
         /** Write data in a user backup register
-         * @param register one of UBR0 through UBR9
+         * @param register one of UBR0 through UBR9 for MDOT, one of UBR0 through UBR21 for XDOT
          * @param data user data to back up
          * @returns true if success
          */
         bool writeUserBackupRegister(uint32_t reg, uint32_t data);
 
         /** Read data in a user backup register
-         * @param register one of UBR0 through UBR9
+         * @param register one of UBR0 through UBR9 for MDOT, one of UBR0 through UBR21 for XDOT
          * @param data gets set to content of register
          * @returns true if success
          */
         bool readUserBackupRegister(uint32_t reg, uint32_t& data);
 
+#if defined(TARGET_MTS_MDOT_F411RE)
         // Save user file data to flash
         // file - name of file max 30 chars
         // data - data of file
@@ -1082,6 +1113,7 @@ class mDot {
         // Move file into the firmware upgrade path to be flashed on next boot
         // file - name of file
         bool moveUserFileToFirmwareUpgrade(const char* file);
+#endif /* TARGET_MTS_MDOT_F411RE */
 
         // get current statistics
         // Join Attempts, Join Fails, Up Packets, Down Packets, Missed Acks
@@ -1262,4 +1294,3 @@ class mDot {
 };
 
 #endif
-
