@@ -121,6 +121,7 @@ class mDotEvent: public lora::MacEvents {
             PacketReceived = false;
             AckReceived = false;
             PongReceived = false;
+            TxNbRetries = 0;
 
             logDebug("mDotEvent - TxDone");
             memset(&_flags, 0, sizeof(LoRaMacEventFlags));
@@ -162,6 +163,12 @@ class mDotEvent: public lora::MacEvents {
             Notify();
         }
 
+        virtual void MissedAck(uint8_t retries) {
+            logDebug("mDotEvent - MissedAck : retries %u", retries);
+            TxNbRetries = retries;
+            _info.TxNbRetries = retries;
+        }
+
         virtual void PacketRx(uint8_t port, uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr, lora::DownlinkControl ctrl, uint8_t slot, uint8_t retries = 0) {
             logDebug("mDotEvent - PacketRx");
             RxPort = port;
@@ -189,7 +196,7 @@ class mDotEvent: public lora::MacEvents {
             _info.RxRssi = rssi;
             _info.RxSnr = snr;
             _info.TxAckReceived = AckReceived;
-            _info.TxAckReceived = retries;
+            _info.TxNbRetries = retries;
             _info.Status = LORAMAC_EVENT_INFO_STATUS_OK;
             Notify();
         }

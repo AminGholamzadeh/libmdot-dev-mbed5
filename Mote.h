@@ -118,6 +118,12 @@ namespace lora {
              * @return battery level 0-255, 0 - external power, 1-254 level min-max, 255 device unable to measure battery
              */
             virtual uint8_t MeasureBattery();
+
+            /**
+             * Fired when ack attempts are exhausted and RxTimeout or RxError occur
+             * @param retries number of attempts to resend the packet
+             */
+            virtual void MissedAck(uint8_t retries);
     };
 
     class Mote {

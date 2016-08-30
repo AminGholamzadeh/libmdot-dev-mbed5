@@ -260,7 +260,8 @@ namespace lora {
         LORA_JOIN_BACKOFF = 14,
         LORA_NO_FREE_CHAN = 15,
         LORA_AGGREGATED_DUTY_CYCLE = 16,
-        LORA_MAX_PAYLOAD_EXCEEDED
+        LORA_MAC_COMMAND_ERROR = 17,
+        LORA_MAX_PAYLOAD_EXCEEDED = 18
     };
 
     /**
