@@ -21,11 +21,6 @@ class mDot {
         mDot();
         ~mDot();
 
-        static void idle(void const* args) {
-            while (1)
-                __WFI();
-        }
-
         void initLora();
 
         void setLastError(const std::string& str);
@@ -67,7 +62,6 @@ class mDot {
         lora::Settings _settings;
         mDotEvent* _events;
 
-        Thread _idle_thread;
         std::string _last_error;
         static const uint32_t _baud_rates[];
         uint8_t _activity_led_state;
