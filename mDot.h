@@ -1043,31 +1043,40 @@ class mDot {
         bool readUserBackupRegister(uint32_t reg, uint32_t& data);
 
 #if defined(TARGET_MTS_MDOT_F411RE)
+        ///////////////////////////////////////////////////////////////////
+        // Filesystem (Non Volatile Memory) Operation Functions for mDot //
+        ///////////////////////////////////////////////////////////////////
+
         // Save user file data to flash
         // file - name of file max 30 chars
         // data - data of file
         // size - size of file
+        // returns true if successful
         bool saveUserFile(const char* file, void* data, uint32_t size);
 
         // Append user file data to flash
         // file - name of file max 30 chars
         // data - data of file
         // size - size of file
+        // returns true if successful
         bool appendUserFile(const char* file, void* data, uint32_t size);
 
         // Read user file data from flash
         // file - name of file max 30 chars
         // data - data of file
         // size - size of file
+        // returns true if successful
         bool readUserFile(const char* file, void* data, uint32_t size);
 
         // Move a user file in flash
         // file     - name of file
         // new_name - new name of file
+        // returns true if successful
         bool moveUserFile(const char* file, const char* new_name);
 
         // Delete user file data from flash
         // file - name of file max 30 chars
+        // returns true if successful
         bool deleteUserFile(const char* file);
 
         // Open user file in flash, max of 4 files open concurrently
@@ -1081,24 +1090,26 @@ class mDot {
         // file - mdot file struct
         // offset - offset in bytes
         // whence - where offset is based SEEK_SET, SEEK_CUR, SEEK_END
+        // returns true if successful
         bool seekUserFile(mDot::mdot_file& file, size_t offset, int whence);
 
         // Read bytes from open file
         // file - mdot file struct
         // data - mem location to store data
         // length - number of bytes to read
-        // returns - number of bytes written
+        // returns - number of bytes read, negative if error
         int readUserFile(mDot::mdot_file& file, void* data, size_t length);
 
         // Write bytes to open file
         // file - mdot file struct
         // data - data to write
         // length - number of bytes to write
-        // returns - number of bytes written
+        // returns - number of bytes written, negative if error
         int writeUserFile(mDot::mdot_file& file, void* data, size_t length);
 
         // Close open file
         // file - mdot file struct
+        // returns true if successful
         bool closeUserFile(mDot::mdot_file& file);
 
         // List user files stored in flash
@@ -1106,7 +1117,26 @@ class mDot {
 
         // Move file into the firmware upgrade path to be flashed on next boot
         // file - name of file
+        // returns true if successful
         bool moveUserFileToFirmwareUpgrade(const char* file);
+#else
+        ///////////////////////////////////////////////////////////////
+        // EEPROM (Non Volatile Memory) Operation Functions for xDot //
+        ///////////////////////////////////////////////////////////////
+        
+        // Write to EEPROM
+        // addr - address to write to (0 - 0x17FF)
+        // data - data to write
+        // size - size of data
+        // returns true if successful
+        bool nvmWrite(uint16_t addr, void* data, uint16_t size);
+
+        // Read from EEPROM
+        // addr - address to read from (0 - 0x17FF)
+        // data - buffer for data
+        // size - size of buffer
+        // returns true if successful
+        bool nvmRead(uint16_t addr, void* data, uint16_t size);
 #endif /* TARGET_MTS_MDOT_F411RE */
 
         // get current statistics
