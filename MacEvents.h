@@ -39,7 +39,7 @@ namespace lora {
             virtual void RxTimeout(uint8_t slot) = 0;
             virtual void RxError(uint8_t slot) = 0;
 
-            virtual void MissedAck(uint8_t retries);
+            virtual void MissedAck(uint8_t retries) = 0;
 
             virtual uint8_t MeasureBattery() = 0;
 
