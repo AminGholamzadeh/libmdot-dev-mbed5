@@ -108,6 +108,7 @@ class mDot {
             MDOT_TEST_MODE = -9,
             MDOT_NO_ENABLED_CHAN = -10,
             MDOT_AGGREGATED_DUTY_CYCLE = -11,
+            MDOT_MAX_PAYLOAD_EXCEEDED = -12,
             MDOT_ERROR = -1024,
         } mdot_ret_code;
 
